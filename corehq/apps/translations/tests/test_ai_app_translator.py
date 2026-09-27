@@ -260,22 +260,28 @@ def _add_module_first(app):
     app.rearrange_modules(len(app.modules) - 1, 0)
 
 
-@pytest.mark.parametrize("change_app, dropped_source", [
-    (lambda app: None, None),
-    (_edit_module_name_source, 'register module'),
-    (_fill_module_name_target, 'register module'),
-    (_replace_question, 'What is the name?'),
-    (_add_module_first, None),  # unit ids shift; keys must not
-], ids=['unchanged', 'source-edited', 'target-filled', 'row-gone', 'ids-shift'])
-def test_rebase_results(change_app, dropped_source):
+@pytest.mark.parametrize("mode, change_app, dropped_source", [
+    (MODE_FILL_MISSING, lambda app: None, None),
+    (MODE_FILL_MISSING, _edit_module_name_source, 'register module'),
+    (MODE_FILL_MISSING, _fill_module_name_target, 'register module'),
+    (MODE_FILL_MISSING, _replace_question, 'What is the name?'),
+    (MODE_FILL_MISSING, _add_module_first, None),  # unit ids shift; keys must not
+    (MODE_RETRANSLATE, lambda app: None, None),
+    # the string is still a unit, so only its changed target shows the edit
+    (MODE_RETRANSLATE, _fill_module_name_target, 'register module'),
+], ids=[
+    'unchanged', 'source-edited', 'target-filled', 'row-gone', 'ids-shift',
+    'retranslate-unchanged', 'retranslate-target-edited',
+])
+def test_rebase_results(mode, change_app, dropped_source):
     app = _make_app()
-    stale_fmt = AppTranslationFormat(app, 'fra')
+    stale_fmt = AppTranslationFormat(app, 'fra', mode=mode)
     stale_units = stale_fmt.load_input()
     stale_fmt.results = {
         uid: f'FR:{unit.source_text}' for uid, unit in stale_units.items()}
 
     change_app(app)
-    fresh_fmt = AppTranslationFormat(app, 'fra')
+    fresh_fmt = AppTranslationFormat(app, 'fra', mode=mode)
     fresh_fmt.load_input()
 
     changed = _rebase_results(stale_fmt, fresh_fmt)

@@ -95,9 +95,11 @@ def _rebase_results(stale_fmt, fresh_fmt):
     for unit_id, translated in stale_fmt.results.items():
         unit = stale_fmt.units_by_id[unit_id]
         fresh_id = fresh_ids.get(unit.string_key)
+        fresh_unit = fresh_fmt.units_by_id.get(fresh_id)
         if (
-            fresh_id is None
-            or fresh_fmt.units_by_id[fresh_id].source_text != unit.source_text
+            fresh_unit is None
+            or fresh_unit.source_text != unit.source_text
+            or fresh_unit.target_text != unit.target_text
         ):
             changed += 1
             continue
@@ -195,6 +197,7 @@ class AppTranslationFormat(TranslationFormat):
                     sheet_name=sheet_name,
                     row_index=row_index,
                     source_text=str(source),
+                    target_text=str(target) if target else '',
                     string_key=string_key,
                 )
                 self.units_by_sheet.setdefault(sheet_name, []).append(unit_id)
@@ -360,6 +363,7 @@ class TranslationUnit:
     sheet_name: str
     row_index: int
     source_text: str
+    target_text: str
     string_key: str
 
 
